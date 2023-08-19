@@ -137,6 +137,7 @@ curl -i -X PUT -H "Accept:application/json" \
 # Insert test CLAIM and PAYMENT
 ```sql
 INSERT INTO CLAIM (doctor_id, visit_date, family_member_id, amount) VALUES (1, '2023-01-01', 1, 500);
+INSERT INTO CLAIM (doctor_id, visit_date, family_member_id, amount) VALUES (1, '2023-01-02', 3, 700);
 INSERT INTO PAYMENT(family_member_id, claim_id, amount, payment_date) VALUES(2, 1, 100, '2023-01-31');
 ```
 
