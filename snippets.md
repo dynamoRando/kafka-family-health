@@ -315,3 +315,101 @@ CREATE TABLE T_CLAIM WITH (kafka_topic='family_health_0.family_health.CLAIM', va
 
 CREATE TABLE T_PAYMENT WITH (kafka_topic='family_health_0.family_health.PAYMENT', value_format='avro', key_format='avro');
 ```
+
+Note that these tables have the ROWKEY with a struct of the ID. This is not desirable. Feel free to drop these objects, as we won't use them.
+
+## Create streams and table to re-key
+
+### Doctor
+
+```
+CREATE STREAM S_DOCTOR (ID BIGINT, NAME VARCHAR) WITH (kafka_topic='family_health_0.family_health.DOCTOR', value_format='avro', key_format='avro');
+
+CREATE STREAM SK_DOCTOR AS SELECT ROWKEY->ID ID, NAME FROM S_DOCTOR PARTITION BY ROWKEY->ID;
+
+CREATE TABLE TK_DOCTOR(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH (KAFKA_TOPIC='SK_DOCTOR', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+
+```
+
+The rest:
+
+### Family
+
+```
+CREATE STREAM S_FAMILY (ID BIGINT, NAME VARCHAR) WITH (kafka_topic='family_health_0.family_health.FAMILY', value_format='avro', key_format='avro');
+
+CREATE STREAM SK_FAMILY AS SELECT ROWKEY->ID ID, NAME FROM S_FAMILY PARTITION BY ROWKEY->ID;
+
+CREATE TABLE TK_FAMILY(ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH (KAFKA_TOPIC='SK_FAMILY', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+```
+
+### Family Member
+
+```
+CREATE STREAM S_FAMILY_MEMBER (ID BIGINT, FAMILY_ID BIGINT, NAME VARCHAR) WITH (kafka_topic='family_health_0.family_health.FAMILY_MEMBER', value_format='avro', key_format='avro');
+
+CREATE STREAM SK_FAMILY_MEMBER AS SELECT ROWKEY->ID ID, FAMILY_ID, NAME FROM S_FAMILY_MEMBER PARTITION BY ROWKEY->ID;
+
+CREATE TABLE TK_FAMILY_MEMBER(ID BIGINT PRIMARY KEY, FAMILY_ID BIGINT, NAME VARCHAR) WITH (KAFKA_TOPIC='SK_FAMILY_MEMBER', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+```
+
+### Claim
+
+```
+CREATE STREAM S_CLAIM (ID BIGINT, DOCTOR_ID BIGINT, VISIT_DATE VARCHAR, FAMILY_MEMBER_ID BIGINT, AMOUNT BIGINT) WITH (kafka_topic='family_health_0.family_health.CLAIM', value_format='avro', key_format='avro');
+
+CREATE STREAM SK_CLAIM AS SELECT ROWKEY->ID ID, DOCTOR_ID, VISIT_DATE, FAMILY_MEMBER_ID, AMOUNT FROM S_CLAIM PARTITION BY ROWKEY->ID;
+
+CREATE TABLE TK_CLAIM(ID BIGINT PRIMARY KEY, DOCTOR_ID BIGINT, VISIT_DATE VARCHAR, FAMILY_MEMBER_ID BIGINT, AMOUNT BIGINT) WITH (KAFKA_TOPIC='SK_CLAIM', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+```
+
+### Payment
+
+```
+CREATE STREAM S_PAYMENT (ID BIGINT, FAMILY_MEMBER_ID BIGINT, CLAIM_ID BIGINT, AMOUNT BIGINT, PAYMENT_DATE VARCHAR) WITH (kafka_topic='family_health_0.family_health.PAYMENT', value_format='avro', key_format='avro');
+
+CREATE STREAM SK_PAYMENT AS SELECT ROWKEY->ID ID, FAMILY_MEMBER_ID, CLAIM_ID, AMOUNT, PAYMENT_DATE FROM S_PAYMENT PARTITION BY ROWKEY->ID;
+
+CREATE TABLE TK_PAYMENT(ID BIGINT PRIMARY KEY, FAMILY_MEMBER_ID BIGINT, CLAIM_ID BIGINT, AMOUNT BIGINT, PAYMENT_DATE VARCHAR) WITH (KAFKA_TOPIC='SK_PAYMENT', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+```
+
+### Create intermediate table to bring names into CLAIMs
+
+Foreign key JOIN are not part of multiple table joins. If we try:
+
+```
+ksql> SELECT C.VISIT_DATE, D.NAME, FM.NAME FROM TK_CLAIM C INNER JOIN TK_DOCTOR D ON C.DOCTOR_ID = D.ID INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID EMIT CHANGES;
+
+Invalid join condition: foreign-key table-table joins are not supported as part of n-way joins. Got C.FAMILY_MEMBER_ID = FM.ID.
+Statement: SELECT C.VISIT_DATE, D.NAME, FM.NAME FROM TK_CLAIM C INNER JOIN TK_DOCTOR D ON C.DOCTOR_ID = D.ID INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID EMIT CHANGES;: SELECT C.VISIT_DATE, D.NAME, FM.NAME FROM TK_CLAIM C INNER JOIN TK_DOCTOR D ON C.DOCTOR_ID = D.ID INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID EMIT CHANG
+ES;
+```
+
+The only way I've found around this is to produce intermediate objects, building up to the final desired JOIN. In other words, we'll first create an intermediate table to get the doctor's name:
+
+```
+ CREATE TABLE TI_CLAIM AS SELECT C.ID, C.VISIT_DATE, D.NAME, C.FAMILY_MEMBER_ID FROM TK_CLAIM C INNER JOIN TK_DOCTOR D ON C.DOCTOR_ID = D.ID;
+```
+
+Then we'll get the family member name, JOINing on this table:
+
+```
+ksql> SELECT C.VISIT_DATE, C.NAME DOCTOR_NAME, FM.NAME FAMILY_MEMBER_NAME FROM TI_CLAIM C INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID EMIT CHANGES;
++--------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
+|VISIT_DATE                                                                                                          |DOCTOR_NAME                                                                                                         |FAMILY_MEMBER_NAME                                                                                                  |
++--------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------+
+|2023-01-01                                                                                                          |Pamela Pence                                                                                                        |Thomas                                                                                                              |
+|2023-01-02                                                                                                          |Pamela Pence                                                                                                        |Sandra                                                                                                              |
+
+```
+
+Again, this sucks if we want to try and get the family member's last name:
+
+```
+ksql> SELECT C.VISIT_DATE, C.NAME DOCTOR_NAME, FM.NAME FAMILY_MEMBER_FIRST_NAME, F.NAME FAMILY_MEMBER_LAST_NAME FROM TI_CLAIM C INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID INNER JOIN TK_FAMILY F ON FM.FAMILY_ID = F.ID EMIT CHANGES;
+
+Invalid join condition: foreign-key table-table joins are not supported as part of n-way joins. Got FM.FAMILY_ID = F.ID.
+Statement: SELECT C.VISIT_DATE, C.NAME DOCTOR_NAME, FM.NAME FAMILY_MEMBER_FIRST_NAME, F.NAME FAMILY_MEMBER_LAST_NAME FROM TI_CLAIM C INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID INNER JOIN TK_FAMILY F ON FM.FAMILY_ID = F.ID EMIT CHANGES;: SELECT C.VISIT_DATE, C.NAME DOCTOR_NAME, FM.NAME FAMILY_MEMBER_FIRST_NAME, F.NAME FAMILY_MEMBER_LAS
+T_NAME FROM TI_CLAIM C INNER JOIN TK_FAMILY_MEMBER FM ON C.FAMILY_MEMBER_ID = FM.ID INNER JOIN TK_FAMILY F ON FM.FAMILY_ID = F.ID EMIT CHANGES;
+ksql> 
+```
