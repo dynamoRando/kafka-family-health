@@ -322,7 +322,17 @@ CREATE TABLE T_CLAIM WITH (kafka_topic='family_health_0.family_health.CLAIM', va
 CREATE TABLE T_PAYMENT WITH (kafka_topic='family_health_0.family_health.PAYMENT', value_format='avro', key_format='avro');
 ```
 
+This will emit ROWKEY as the Primary Key.
+
+Or alernatively:
+
+```
+CREATE TABLE TD_DOCTOR (ID BIGINT PRIMARY KEY, NAME VARCHAR) WITH (KAFKA_TOPIC='family_health_0.family_health.DOCTOR', VALUE_FORMAT='AVRO', KEY_FORMAT='AVRO');
+```
+
 ## Create streams and table to re-key
+
+Alternative way if you have the topic with the STRUCT as the key. This applies to topics that we can't get the chained Single Message Transforms to work to put the key as a specific field.
 
 ### Doctor
 
