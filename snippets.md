@@ -204,8 +204,6 @@ curl -i -X PUT -H "Accept:application/json" \
 }';
 ```
 
-For the CLAIM table, we need to add an SMT to handle the date field converting from Unix epoch:
-
 ```
 curl -i -X PUT -H "Accept:application/json" \
     -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_claim_06/config \
