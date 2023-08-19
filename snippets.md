@@ -26,21 +26,21 @@ Note that this is against the `validate` endpoint.
  curl -X PUT http://localhost:8083/connector-plugins/io.debezium.connector.mysql.MySqlConnector/config/validate -H "Content-Type: application/json" -d '{ 
     "connector.class": "io.debezium.connector.mysql.MySqlConnector",
     "database.user": "family_health",
-    "database.server.id": "11",
+    "database.server.id": "1",
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "family_health_11",
+    "topic.prefix": "family_health_1",
     "schema.history.internal.kafka.topic": "schema-changes.health",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_11",
+    "name": "source_family_health_1",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
     "database.history.kafka.topic": "family_health-history",
-    "database.server.name" : "family_health_11",
+    "database.server.name" : "family_health_1",
     "database.include.list": "family_health",
-    "transforms":"unwrap, ts",
+    "transforms":"unwrap, ts, key",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones" : "true",
     "transforms.unwrap.delete.handling.mode":"drop",
@@ -48,6 +48,8 @@ Note that this is against the `validate` endpoint.
     "transforms.ts.format": "yyyy-MM-dd",
     "transforms.ts.target.type": "string", 
     "transforms.ts.field":"visit_date",
+    "transforms.key.type":"org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.key.fields":"id", 
     "time.precision.mode":"connect",
     "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
  }';
@@ -59,23 +61,23 @@ Now, do it for real:
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_11/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_4/config \
     -d '{ 
     "connector.class": "io.debezium.connector.mysql.MySqlConnector",
     "database.user": "family_health",
-    "database.server.id": "11",
+    "database.server.id": "4",
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "family_health_11",
-    "schema.history.internal.kafka.topic": "schema-changes.health",
+    "topic.prefix": "family_health_4",
+    "schema.history.internal.kafka.topic": "schema-changes.health.4",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_11",
+    "name": "source_family_health_4",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
     "database.history.kafka.topic": "family_health-history",
-    "database.server.name" : "family_health_11",
+    "database.server.name" : "family_health_4",
     "database.include.list": "family_health",
     "transforms":"unwrap, ts",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
@@ -86,6 +88,10 @@ curl -i -X PUT -H "Accept:application/json" \
     "transforms.ts.target.type": "string", 
     "transforms.ts.field":"visit_date",
     "time.precision.mode":"connect",
+    "key.converter.schemas.enable":"true",
+    "value.converter.schemas.enable":"true",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
     "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
  }';
 ```
@@ -96,7 +102,7 @@ This is an alternative example of creating a Debezium connector for the same dat
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_01/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_0_dnu/config \
     -d '{ 
     "connector.class": "io.debezium.connector.mysql.MySqlConnector",
     "database.user": "family_health",
@@ -104,15 +110,15 @@ curl -i -X PUT -H "Accept:application/json" \
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "dbz",
+    "topic.prefix": "family_health_0_dnu",
     "schema.history.internal.kafka.topic": "schema-changes.health_01",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_01",
+    "name": "source_family_health_0_dnu",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
-    "database.history.kafka.topic": "family_health-history-01",
-    "database.server.name" : "family_health_01",
+    "database.history.kafka.topic": "family_health-history-0",
+    "database.server.name" : "family_health_0",
     "database.include.list": "family_health",
     "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
  }';
@@ -174,6 +180,33 @@ curl -i -X PUT -H "Accept:application/json" \
 	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
     "transforms.valueKey.fields":"id",        
+	"auto.create": "true",
+	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
+	"insert.mode": "upsert",
+	"pk.mode": "record_key",
+	"pk.fields": "id"
+}';
+```
+
+Alt Experiment:
+
+```
+curl -i -X PUT -H "Accept:application/json" \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_family_05/config \
+    -d '{
+	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+	"tasks.max": "1",
+	"topics": "family_health_4.family_health.FAMILY",
+    "name": "sink_family_health_family_05",
+    "delete.enabled": "true",
+	"transforms": "route,unwrap",
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)",
+    "transforms.route.replacement": "$3",
+	"transforms.unwrap.drop.tombstones": "false",
+	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState", 
+    "key.converter":"io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url":"http://schema-registry:8081",
 	"auto.create": "true",
 	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
 	"insert.mode": "upsert",
