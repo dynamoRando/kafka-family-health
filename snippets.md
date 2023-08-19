@@ -200,8 +200,7 @@ curl -i -X PUT -H "Accept:application/json" \
 }';
 ```
 
-
-Do this again for DOCTOR, CLAIM, and PAYMENT:
+# Do this again for DOCTOR, CLAIM, and PAYMENT:
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
@@ -282,4 +281,36 @@ curl -i -X PUT -H "Accept:application/json" \
 	"pk.mode": "record_key",
 	"pk.fields": "id"
 }';
+```
+
+# Create same abstractions in ksql
+
+To login:
+
+```
+docker exec -it ksqldb-cli-1 bash
+```
+
+```
+ksql http://ksqldb-server-1:8088
+```
+
+Show topics at the start:
+
+```
+SET 'auto.offset.reset' = 'earliest';
+```
+
+## Create ksql table abstractions
+
+```
+CREATE TABLE T_DOCTOR WITH (kafka_topic='family_health_0.family_health.DOCTOR', value_format='avro', key_format='avro');
+
+CREATE TABLE T_FAMILY WITH (kafka_topic='family_health_0.family_health.FAMILY', value_format='avro', key_format='avro');
+
+CREATE TABLE T_FAMILY_MEMBER WITH (kafka_topic='family_health_0.family_health.FAMILY_MEMBER', value_format='avro', key_format='avro');
+
+CREATE TABLE T_CLAIM WITH (kafka_topic='family_health_0.family_health.CLAIM', value_format='avro', key_format='avro');
+
+CREATE TABLE T_PAYMENT WITH (kafka_topic='family_health_0.family_health.PAYMENT', value_format='avro', key_format='avro');
 ```
