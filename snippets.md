@@ -30,17 +30,17 @@ Note that this is against the `validate` endpoint.
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "family_health_1",
-    "schema.history.internal.kafka.topic": "schema-changes.health",
+    "topic.prefix": "family_health_0",
+    "schema.history.internal.kafka.topic": "schema-changes.health.0",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_1",
+    "name": "source_family_health_0",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
     "database.history.kafka.topic": "family_health-history",
-    "database.server.name" : "family_health_1",
+    "database.server.name" : "family_health_0",
     "database.include.list": "family_health",
-    "transforms":"unwrap, ts, key",
+    "transforms":"unwrap, ts, ts2",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones" : "true",
     "transforms.unwrap.delete.handling.mode":"drop",
@@ -48,10 +48,16 @@ Note that this is against the `validate` endpoint.
     "transforms.ts.format": "yyyy-MM-dd",
     "transforms.ts.target.type": "string", 
     "transforms.ts.field":"visit_date",
-    "transforms.key.type":"org.apache.kafka.connect.transforms.ValueToKey",
-    "transforms.key.fields":"id", 
+    "transforms.ts2.type":"org.apache.kafka.connect.transforms.TimestampConverter$Value",
+    "transforms.ts2.format": "yyyy-MM-dd",
+    "transforms.ts2.target.type": "string", 
+    "transforms.ts2.field":"payment_date",
     "time.precision.mode":"connect",
-    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
+    "key.converter.schemas.enable":"true",
+    "value.converter.schemas.enable":"true",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://schema-registry:8081",
+    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER,PAYMENT"
  }';
 ```
 
@@ -61,25 +67,25 @@ Now, do it for real:
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_4/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_0/config \
     -d '{ 
     "connector.class": "io.debezium.connector.mysql.MySqlConnector",
     "database.user": "family_health",
-    "database.server.id": "4",
+    "database.server.id": "1",
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "family_health_4",
-    "schema.history.internal.kafka.topic": "schema-changes.health.4",
+    "topic.prefix": "family_health_0",
+    "schema.history.internal.kafka.topic": "schema-changes.health.0",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_4",
+    "name": "source_family_health_0",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
     "database.history.kafka.topic": "family_health-history",
-    "database.server.name" : "family_health_4",
+    "database.server.name" : "family_health_0",
     "database.include.list": "family_health",
-    "transforms":"unwrap, ts",
+    "transforms":"unwrap, ts, ts2",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones" : "true",
     "transforms.unwrap.delete.handling.mode":"drop",
@@ -87,12 +93,16 @@ curl -i -X PUT -H "Accept:application/json" \
     "transforms.ts.format": "yyyy-MM-dd",
     "transforms.ts.target.type": "string", 
     "transforms.ts.field":"visit_date",
+    "transforms.ts2.type":"org.apache.kafka.connect.transforms.TimestampConverter$Value",
+    "transforms.ts2.format": "yyyy-MM-dd",
+    "transforms.ts2.target.type": "string", 
+    "transforms.ts2.field":"payment_date",
     "time.precision.mode":"connect",
     "key.converter.schemas.enable":"true",
     "value.converter.schemas.enable":"true",
     "key.converter": "io.confluent.connect.avro.AvroConverter",
     "key.converter.schema.registry.url": "http://schema-registry:8081",
-    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
+    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER,PAYMENT"
  }';
 ```
 
@@ -102,7 +112,7 @@ This is an alternative example of creating a Debezium connector for the same dat
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_0_dnu/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/source_family_health_1_dnu/config \
     -d '{ 
     "connector.class": "io.debezium.connector.mysql.MySqlConnector",
     "database.user": "family_health",
@@ -110,24 +120,24 @@ curl -i -X PUT -H "Accept:application/json" \
     "tasks.max": "1",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
-    "topic.prefix": "family_health_0_dnu",
-    "schema.history.internal.kafka.topic": "schema-changes.health_01",
+    "topic.prefix": "family_health_1_dnu",
+    "schema.history.internal.kafka.topic": "schema-changes.health.2",
     "database.hostname": "db",
     "database.password": "family_health",
-    "name": "source_family_health_0_dnu",
+    "name": "source_family_health_1_dnu",
     "database.allowPublicKeyRetrieval":"true",
     "database.history.kafka.bootstrap.servers": "kafka-1:9092",
-    "database.history.kafka.topic": "family_health-history-0",
-    "database.server.name" : "family_health_0",
+    "database.history.kafka.topic": "family_health-history-1",
+    "database.server.name" : "family_health_1",
     "database.include.list": "family_health",
-    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER"
+    "table_include_list":"DOCTOR,CLAIM,FAMILY,FAMILY_MEMBER,PAYMENT"
  }';
 ```
 
-# Create clone database to sink data into
-
+# Insert test CLAIM and PAYMENT
 ```sql
-CREATE DATABASE family_health_clone;
+INSERT INTO CLAIM (doctor_id, visit_date, family_member_id, amount) VALUES (1, '2023-01-01', 1, 500);
+INSERT INTO PAYMENT(family_member_id, claim_id, amount, payment_date) VALUES(2, 1, 100, '2023-01-31');
 ```
 
 # Create a JDBC sink to mirror data from the FAMILY_MEMBER topic 
@@ -136,12 +146,12 @@ This creates a sink against the "family_health_clone" database and pulls message
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_clone_family_member_00/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_clone_family_member_0/config \
     -d '{
 	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
 	"tasks.max": "1",
-	"topics": "family_health_00.family_health.FAMILY_MEMBER",
-    "name": "sink_family_health_clone_family_member_00",
+	"topics": "family_health_0.family_health.FAMILY_MEMBER",
+    "name": "sink_family_health_clone_family_member_0",
     "delete.enabled": "true",
 	"transforms": "route,unwrap,valueKey",
     "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
@@ -152,6 +162,8 @@ curl -i -X PUT -H "Accept:application/json" \
     "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
     "transforms.valueKey.fields":"id",        
 	"auto.create": "true",
+    "key.converter":"io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url":"http://schema-registry:8081",
 	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
 	"insert.mode": "upsert",
 	"pk.mode": "record_key",
@@ -165,39 +177,12 @@ This does the same thing as before, except that we're going to pull messages fro
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_family_00/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_family_0/config \
     -d '{
 	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
 	"tasks.max": "1",
-	"topics": "family_health_00.family_health.FAMILY",
-    "name": "sink_family_health_family_00",
-    "delete.enabled": "true",
-	"transforms": "route,unwrap,valueKey",
-    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
-    "transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)",
-    "transforms.route.replacement": "$3",
-	"transforms.unwrap.drop.tombstones": "false",
-	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
-    "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
-    "transforms.valueKey.fields":"id",        
-	"auto.create": "true",
-	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
-	"insert.mode": "upsert",
-	"pk.mode": "record_key",
-	"pk.fields": "id"
-}';
-```
-
-Alt Experiment:
-
-```
-curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_family_05/config \
-    -d '{
-	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
-	"tasks.max": "1",
-	"topics": "family_health_4.family_health.FAMILY",
-    "name": "sink_family_health_family_05",
+	"topics": "family_health_0.family_health.FAMILY",
+    "name": "sink_family_health_family_0",
     "delete.enabled": "true",
 	"transforms": "route,unwrap",
     "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
@@ -215,25 +200,28 @@ curl -i -X PUT -H "Accept:application/json" \
 }';
 ```
 
-Do this again for DOCTOR and for CLAIM:
+
+Do this again for DOCTOR, CLAIM, and PAYMENT:
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_doctor_00/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_doctor_0/config \
     -d '{
 	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
 	"tasks.max": "1",
-	"topics": "family_health_00.family_health.DOCTOR",
-    "name": "sink_family_health_doctor_00",
+	"topics": "family_health_0.family_health.DOCTOR",
+    "name": "sink_family_health_doctor_0",
     "delete.enabled": "true",
 	"transforms": "route,unwrap,valueKey",
     "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
     "transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)",
-     "transforms.route.replacement": "$3",
+    "transforms.route.replacement": "$3",
 	"transforms.unwrap.drop.tombstones": "false",
 	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
-    "transforms.valueKey.fields":"id",        
+    "transforms.valueKey.fields":"id", 
+    "key.converter":"io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url":"http://schema-registry:8081",       
 	"auto.create": "true",
 	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
 	"insert.mode": "upsert",
@@ -244,12 +232,12 @@ curl -i -X PUT -H "Accept:application/json" \
 
 ```
 curl -i -X PUT -H "Accept:application/json" \
-    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_claim_06/config \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_claim_0/config \
     -d '{
 	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
 	"tasks.max": "1",
-	"topics": "family_health_11.family_health.CLAIM",
-    "name": "sink_family_health_claim_06",
+	"topics": "family_health_0.family_health.CLAIM",
+    "name": "sink_family_health_claim_0",
     "delete.enabled": "true",
 	"transforms": "route,unwrap,valueKey",
     "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
@@ -260,6 +248,35 @@ curl -i -X PUT -H "Accept:application/json" \
     "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
     "transforms.valueKey.fields":"id",   
     "auto.create": "true",
+    "key.converter":"io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url":"http://schema-registry:8081",
+	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
+	"insert.mode": "upsert",
+	"pk.mode": "record_key",
+	"pk.fields": "id"
+}';
+```
+
+```
+curl -i -X PUT -H "Accept:application/json" \
+    -H  "Content-Type:application/json" http://localhost:8083/connectors/sink_family_health_payment_0/config \
+    -d '{
+	"connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+	"tasks.max": "1",
+	"topics": "family_health_0.family_health.PAYMENT",
+    "name": "sink_family_health_payment_0",
+    "delete.enabled": "true",
+	"transforms": "route,unwrap,valueKey",
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "([^.]+)\\.([^.]+)\\.([^.]+)",
+    "transforms.route.replacement": "$3",
+	"transforms.unwrap.drop.tombstones": "false",
+	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.valueKey.type":"org.apache.kafka.connect.transforms.ValueToKey",
+    "transforms.valueKey.fields":"id",   
+    "auto.create": "true",
+    "key.converter":"io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url":"http://schema-registry:8081",
 	"connection.url": "jdbc:mysql://db:3306/family_health_clone?user=family_health&password=family_health",
 	"insert.mode": "upsert",
 	"pk.mode": "record_key",
