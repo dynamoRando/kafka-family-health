@@ -28,6 +28,7 @@ Note that this is against the `validate` endpoint.
     "database.user": "family_health",
     "database.server.id": "1",
     "tasks.max": "1",
+    "errors.tolerance":"all",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
     "topic.prefix": "family_health_0",
@@ -40,7 +41,7 @@ Note that this is against the `validate` endpoint.
     "database.history.kafka.topic": "family_health-history",
     "database.server.name" : "family_health_0",
     "database.include.list": "family_health",
-    "transforms":"unwrap, ts, ts2",
+    "transforms":"unwrap, ts, ts2, k",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones" : "true",
     "transforms.unwrap.delete.handling.mode":"drop",
@@ -52,6 +53,8 @@ Note that this is against the `validate` endpoint.
     "transforms.ts2.format": "yyyy-MM-dd",
     "transforms.ts2.target.type": "string", 
     "transforms.ts2.field":"payment_date",
+    "transforms.k.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+    "transforms.k.field":"id",
     "time.precision.mode":"connect",
     "key.converter.schemas.enable":"true",
     "value.converter.schemas.enable":"true",
@@ -73,6 +76,7 @@ curl -i -X PUT -H "Accept:application/json" \
     "database.user": "family_health",
     "database.server.id": "1",
     "tasks.max": "1",
+    "errors.tolerance":"all",
     "schema.history.internal.kafka.bootstrap.servers": "kafka-1:9092",
     "database.port": "3306",
     "topic.prefix": "family_health_0",
@@ -85,7 +89,7 @@ curl -i -X PUT -H "Accept:application/json" \
     "database.history.kafka.topic": "family_health-history",
     "database.server.name" : "family_health_0",
     "database.include.list": "family_health",
-    "transforms":"unwrap, ts, ts2",
+    "transforms":"unwrap, ts, ts2, k",
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.drop.tombstones" : "true",
     "transforms.unwrap.delete.handling.mode":"drop",
@@ -97,6 +101,8 @@ curl -i -X PUT -H "Accept:application/json" \
     "transforms.ts2.format": "yyyy-MM-dd",
     "transforms.ts2.target.type": "string", 
     "transforms.ts2.field":"payment_date",
+    "transforms.k.type": "org.apache.kafka.connect.transforms.ExtractField$Key",
+    "transforms.k.field":"id",
     "time.precision.mode":"connect",
     "key.converter.schemas.enable":"true",
     "value.converter.schemas.enable":"true",
@@ -315,8 +321,6 @@ CREATE TABLE T_CLAIM WITH (kafka_topic='family_health_0.family_health.CLAIM', va
 
 CREATE TABLE T_PAYMENT WITH (kafka_topic='family_health_0.family_health.PAYMENT', value_format='avro', key_format='avro');
 ```
-
-Note that these tables have the ROWKEY with a struct of the ID. This is not desirable. Feel free to drop these objects, as we won't use them.
 
 ## Create streams and table to re-key
 
