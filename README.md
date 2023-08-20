@@ -9,9 +9,9 @@ Repo for my notes on messing with Kafka, Kafka Connect, Debezium, Etc. Most of t
 erDiagram
     FAMILY ||--|{ FAMILY_MEMBER : "has many"
     DOCTOR ||--|{ CLAIM : "is part of a"
-    CLAIM }|--|{ FAMILY_MEMBER : "has many"
+    CLAIM }o--|| FAMILY_MEMBER : "has many"
     CLAIM }o--|{ PAYMENT : "may have a"
-    PAYMENT }o--|{ FAMILY_MEMBER : "is made by a"
+    PAYMENT }o--|| FAMILY_MEMBER : "is made by a"
     FAMILY {
         int id
         string family_name
